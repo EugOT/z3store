@@ -59,11 +59,13 @@ control_points:
     kind: verify-script
     path: scripts/verify-pr.ts
     enforces: true
+    marker: "runReadinessCheck"
     note: tier 3 runs `readiness.nu check` before any Zig work (scripts/lib/readiness.ts)
   - id: verify:release
     kind: verify-script
     path: scripts/verify-release.ts
     enforces: true
+    marker: "runReadinessCheck"
     note: tier 4 runs `readiness.nu check --require-evidence` for the release class
   - id: verify:fast
     kind: verify-script
