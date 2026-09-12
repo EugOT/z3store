@@ -230,10 +230,14 @@ def strip-blocks [text: string, lang: string] {
   $out.keep | str join "\n"
 }
 
+# Linear re-renders markdown on save (bullets become `*`), so list markers are
+# canonicalized before hashing; otherwise a record stamped offline would read
+# as stale once the description round-trips through Linear.
 def normalize-text [text: string] {
   $text
     | lines
     | each {|l| $l | str trim --right }
+    | each {|l| $l | str replace -r '^(\s*)[*+]\s+' '$1- ' }
     | str join "\n"
     | str replace --all -r '\n{3,}' "\n\n"
     | str trim

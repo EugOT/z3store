@@ -4,8 +4,8 @@
 # the canonical file.
 lock: readiness-lock/v1
 contract_version: readiness/v1
-validator_sha256: 61a2da8140c864f00d592a2c054e5676993bb46153a180e152e7c2b9465fc23a
+validator_sha256: 6f046763d3dc1ed823c8a18f5a7c4dfbf05e67c680b433edc64beeda7b73e023
 source: Eugene3dotdev/dotfiles
 source_path: readiness/readiness.nu
-source_commit: f8551d7e836cd03f7362113e5bda54571b90f6e1
-vendored_at: 2026-09-12T13:27:55Z
+source_commit: 6529fb2e212e0bc447d8db88ab68ba957c8b62d5
+vendored_at: 2026-09-12T19:38:03Z
