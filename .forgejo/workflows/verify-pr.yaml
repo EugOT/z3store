@@ -41,8 +41,20 @@ jobs:
       - name: Bun install
         run: bun ci
 
-      - name: Run verify-pr gate
+      - name: Run verify-pr gate (readiness check first, then tiers 2-3)
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
         run: bun scripts/verify-pr.ts
+
+      - name: Record source-validation evidence on the Linear issue
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          issue="$(mise x aqua:nushell/nushell@0.109.1 -- nu --no-config-file .readiness/readiness.nu issue)"
+          mise x aqua:nushell/nushell@0.109.1 -- nu --no-config-file .readiness/readiness.nu evidence --issue "$issue" --kind source-validation --control-point forgejo:verify-pr --ref "$HEAD_SHA" --run "$RUN_URL" --note "verify-pr tier: cross-target matrix, safety modes, docs, bounded fuzz"
 
   evals:
     name: Eval structural check

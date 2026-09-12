@@ -1,0 +1,92 @@
+# Readiness adapter (readiness/v1) — consumes the canonical contract from
+# Eugene3dotdev/dotfiles readiness/. z3store is the substrate for the future
+# opportunity store (kairoteca) and ships as a public Zig CLI plus a Homebrew
+# formula, so source and build changes are `release` blast radius. The
+# four-tier verify path is the enforcement point: verify-pr (tier 3) and
+# verify-release (tier 4) run the readiness check; the Forgejo workflows call
+# those tiers, so the same gate holds on the forge and on a workstation.
+adapter: readiness-adapter/v1
+contract_version: readiness/v1
+repo: Eugene3dotdev/z3store
+issue_prefix: TEO
+canonical: Eugene3dotdev/dotfiles:readiness
+path_classes:
+  - glob: ".readiness/**"
+    class: local
+  - glob: "doc/**"
+    class: local
+  - glob: "docs/**"
+    class: local
+  - glob: "**/*.md"
+    class: local
+  - glob: ".claude/**"
+    class: local
+  - glob: ".forgejo/**"
+    class: local
+  - glob: "scripts/**"
+    class: local
+  - glob: "tests/**"
+    class: local
+  - glob: ".mise.toml"
+    class: local
+  - glob: "package.json"
+    class: local
+  - glob: "bun.lock"
+    class: local
+  - glob: "**"
+    class: release
+control_points:
+  - id: forgejo:verify-pr
+    kind: forgejo-workflow
+    path: .forgejo/workflows/verify-pr.yaml
+    enforces: true
+    marker: "scripts/verify-pr.ts"
+    required_check: "Zig quality gate"
+    evidence: [source-validation]
+    note: runs the tier-3 gate, which runs the readiness check first; LINEAR_API_KEY is a Forgejo secret
+  - id: forgejo:release
+    kind: forgejo-workflow
+    path: .forgejo/workflows/release.yaml
+    enforces: true
+    marker: "scripts/verify-release.ts"
+    evidence: [release-verification]
+  - id: forgejo:claude-review
+    kind: forgejo-workflow
+    path: .forgejo/workflows/claude-review.yaml
+    enforces: false
+    note: agent review; external text is untrusted data per CLAUDE.md
+  - id: verify:pr
+    kind: verify-script
+    path: scripts/verify-pr.ts
+    enforces: true
+    note: tier 3 runs `readiness.nu check` before any Zig work (scripts/lib/readiness.ts)
+  - id: verify:release
+    kind: verify-script
+    path: scripts/verify-release.ts
+    enforces: true
+    note: tier 4 runs `readiness.nu check --require-evidence` for the release class
+  - id: verify:fast
+    kind: verify-script
+    path: scripts/verify-fast.ts
+    enforces: false
+    note: per-turn tier stays offline and fast
+  - id: verify:commit
+    kind: verify-script
+    path: scripts/verify-commit.ts
+    enforces: false
+    note: per-commit tier stays offline; the Stop hook runs it
+  - id: agent:claude-hooks
+    kind: agent-hooks
+    path: .claude/settings.json
+    enforces: false
+    note: session-start injects the readiness reminder; Stop runs verify-commit (tier 2)
+  - id: agent:release-skill
+    kind: agent-release-skill
+    path: .claude/skills/release/SKILL.md
+    enforces: true
+    marker: "verify-release.ts"
+    note: the release skill only ever runs verify-release.ts, which carries the gate
+exempt_actors: []
+ignore_paths:
+  - "scripts/verify-*.sh"
+  - ".claude/hooks/**"

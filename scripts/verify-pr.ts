@@ -17,6 +17,7 @@ import { appendJsonl, repoRoot, tail } from "./lib/runtime.ts";
  *   0 — pass
  *   1 — real failure (fuzz crash, build/test failure)
  */
+import { runReadinessCheck } from "./lib/readiness.ts";
 import {
 	runFuzz,
 	zig,
@@ -74,6 +75,17 @@ async function runFuzzBounded(
 async function main(): Promise<void> {
 	const startedAt = Date.now();
 	const root = repoRoot();
+
+	console.log("== readiness gate (readiness/v1) ==");
+	const readiness = runReadinessCheck({ tier: TIER });
+	process.stdout.write(readiness.stdout);
+	process.stderr.write(readiness.stderr);
+	if (readiness.code !== 0) {
+		console.error(
+			"verify-pr: the readiness record for this change is not ready (see .readiness/adapter.yaml; canonical contract in EugOT/dotfiles readiness/)",
+		);
+		await finish(readiness.code ?? 1, startedAt);
+	}
 
 	console.log("== verify-pr -> verify-commit ==");
 	const commit = Bun.spawnSync([process.execPath, "scripts/verify-commit.ts"], {

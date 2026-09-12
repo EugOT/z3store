@@ -12,6 +12,10 @@ on:
         required: false
         default: "7200"
         type: string
+      issue:
+        description: "Linear issue (TEO-n) whose readiness record authorizes this release."
+        required: true
+        type: string
 
 jobs:
   verify-release:
@@ -46,5 +50,15 @@ jobs:
       - name: Bun install
         run: bun ci
 
-      - name: Run verify-release gate
+      - name: Run verify-release gate (readiness --require-evidence first, then tier 4)
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          Z3_READINESS_ISSUE: ${{ inputs.issue }}
         run: bun scripts/verify-release.ts
+
+      - name: Record release-verification evidence on the Linear issue
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ISSUE: ${{ inputs.issue }}
+        run: mise x aqua:nushell/nushell@0.109.1 -- nu --no-config-file .readiness/readiness.nu evidence --issue "$ISSUE" --kind release-verification --control-point forgejo:release --run "$RUN_URL" --note "verify-release tier: reproducible rebuild, deep fuzz, SBOM"

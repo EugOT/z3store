@@ -1,2 +1,4 @@
 [tools]
 zig = "0.16.0"
+# Readiness validator runtime (.readiness/readiness.nu); no short registry name.
+"aqua:nushell/nushell" = "0.109.1"
